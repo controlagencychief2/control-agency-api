@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\MeetingController;
+use App\Http\Controllers\Api\BenchmarkController;
 
 // All API routes protected by Bearer token middleware
 Route::middleware('agent.api')->group(function () {
@@ -17,4 +18,9 @@ Route::middleware('agent.api')->group(function () {
     Route::get('/meetings/{meeting_id}', [MeetingController::class, 'show']);
     Route::post('/meetings/{meeting_id}/turns', [MeetingController::class, 'storeTurn']);
     Route::get('/meetings/{meeting_id}/turns', [MeetingController::class, 'turns']);
+
+    // Benchmark endpoints
+    Route::post('/benchmarks', [BenchmarkController::class, 'store']);
+    Route::get('/benchmarks/latest', [BenchmarkController::class, 'latestByModel']);
+    Route::get('/benchmarks', [BenchmarkController::class, 'index']);
 });
