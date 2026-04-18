@@ -261,6 +261,10 @@ class MeetingController extends Controller
     // POST /api/meetings/{meeting_id}/complete
     public function complete(Request $request, $meetingId)
     {
+        $validated = $request->validate([
+            'summary' => 'nullable|string',
+        ]);
+
         $meeting = Meeting::where('meeting_id', $meetingId)->firstOrFail();
 
         $meeting->update([
@@ -268,6 +272,14 @@ class MeetingController extends Controller
             'completed_at' => now(),
             'current_turn' => null,
         ]);
+
+        if (!empty($validated['summary']) && $meeting->telegram_group_id) {
+            $this->telegram->sendAs(
+                $meeting->created_by,
+                $meeting->telegram_group_id,
+                "[MEETING SUMMARY]\n\n" . $validated['summary']
+            );
+        }
 
         return response()->json([
             'success' => true,
