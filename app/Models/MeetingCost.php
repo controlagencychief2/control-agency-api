@@ -5,27 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class MeetingTurn extends Model
+class MeetingCost extends Model
 {
     protected $fillable = [
         'meeting_id',
         'agent_name',
-        'round_number',
-        'turn_index',
-        'content',
-        'token_count',
-        'model_used',
-        'local_model',
-        'posted_to_telegram',
-        'telegram_message_id',
+        'model',
+        'input_tokens',
+        'output_tokens',
+        'cost_usd',
     ];
 
     protected $casts = [
-        'round_number' => 'integer',
-        'turn_index' => 'integer',
-        'token_count' => 'integer',
-        'local_model' => 'boolean',
-        'posted_to_telegram' => 'boolean',
+        'input_tokens' => 'integer',
+        'output_tokens' => 'integer',
+        'cost_usd' => 'decimal:6',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
