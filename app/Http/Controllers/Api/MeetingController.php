@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Meeting;
 use App\Models\MeetingParticipant;
 use App\Models\MeetingTurn;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MeetingController extends Controller
 {
+    public function __construct(private TelegramService $telegram) {}
+
     // POST /api/meetings
     public function store(Request $request)
     {
@@ -53,10 +56,34 @@ class MeetingController extends Controller
             return $meeting->fresh(['participants']);
         });
 
+        if ($meeting->telegram_group_id && $meeting->initial_message) {
+            $opener = $this->buildOpener($meeting);
+            $msgId = $this->telegram->sendAs(
+                $meeting->created_by,
+                $meeting->telegram_group_id,
+                $opener
+            );
+            if ($msgId) {
+                $meeting->update(['telegram_thread_id' => $msgId]);
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $meeting,
+            'data' => $meeting->fresh(),
         ], 201);
+    }
+
+    private function buildOpener(Meeting $meeting): string
+    {
+        return match ($meeting->tone) {
+            'formal'     => "[BOARD MEETING] {$meeting->topic}\n\n{$meeting->initial_message}\n\nFirst up: {$meeting->current_turn}",
+            'casual'     => "[LUNCH CHAT] {$meeting->topic}\n\n{$meeting->initial_message}",
+            'conspiracy' => "[AGENTS ONLY] {$meeting->topic} - private session started",
+            'emergency'  => "[EMERGENCY] {$meeting->initial_message}\n\nAll agents respond now.",
+            'strategic'  => "[WEEKLY REVIEW] {$meeting->topic}\n\n{$meeting->initial_message}\n\nRound 1 starting...",
+            default      => "{$meeting->topic}\n\n{$meeting->initial_message}",
+        };
     }
 
     // GET /api/meetings/{meeting_id}
@@ -149,12 +176,31 @@ class MeetingController extends Controller
                 'next_agent' => $nextAgent,
                 'next_round' => $nextRound,
                 'status' => $nextStatus,
+                'meeting' => $meeting->fresh(),
             ];
         });
 
+        $turn = $result['turn'];
+        $meeting = $result['meeting'];
+
+        if ($meeting->telegram_group_id && !$turn->posted_to_telegram) {
+            $msgId = $this->telegram->sendAs(
+                $turn->agent_name,
+                $meeting->telegram_group_id,
+                $turn->content
+            );
+
+            if ($msgId) {
+                $turn->update([
+                    'posted_to_telegram' => true,
+                    'telegram_message_id' => $msgId,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $result['turn'],
+            'data' => $turn->fresh(),
             'next_agent' => $result['next_agent'],
             'next_round' => $result['next_round'],
             'status' => $result['status'],

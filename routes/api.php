@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\HeartbeatController;
 use App\Http\Controllers\Api\MeetingController;
 use App\Http\Controllers\Api\BenchmarkController;
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\OutcomeController;
+use App\Http\Controllers\Api\GatewayOrderController;
 
 // All API routes protected by Bearer token middleware
 Route::middleware('agent.api')->group(function () {
@@ -21,6 +23,16 @@ Route::middleware('agent.api')->group(function () {
     Route::get('/meetings/{meeting_id}/turns', [MeetingController::class, 'turns']);
     Route::post('/meetings/{meeting_id}/rounds', [MeetingController::class, 'addRound']);
     Route::post('/meetings/{meeting_id}/complete', [MeetingController::class, 'complete']);
+
+    // Meeting outcomes
+    Route::get('/meetings/{meeting_id}/outcomes', [OutcomeController::class, 'index']);
+    Route::post('/meetings/{meeting_id}/outcomes', [OutcomeController::class, 'store']);
+    Route::patch('/outcomes/{id}', [OutcomeController::class, 'update']);
+
+    // Gateway orders
+    Route::post('/gateway-orders', [GatewayOrderController::class, 'store']);
+    Route::patch('/gateway-orders/{id}', [GatewayOrderController::class, 'update']);
+    Route::get('/gateways/{gateway}/orders', [GatewayOrderController::class, 'indexByGateway']);
 
     // Agent polling
     Route::get('/agents/{agent}/pending', [AgentController::class, 'pending']);
